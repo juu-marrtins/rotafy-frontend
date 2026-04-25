@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rotafy_frontend/core/theme/roy_colors.dart';
+import 'package:rotafy_frontend/features/passenger_home/presentation/pages/wallet/recharge_modal.dart';
 import '../state/passenger_home_controller.dart';
+import 'package:rotafy_frontend/widgets/bottom_nav.dart';
 
 class PassengerHome extends StatefulWidget {
   const PassengerHome({super.key});
@@ -23,41 +25,12 @@ class _PassengerHomeState extends State<PassengerHome> {
         body: _currentIndex == 0
             ? const _HomeView()
             : const Center(child: Text('Em construção')),
-        bottomNavigationBar: _BottomNav(
+          bottomNavigationBar: BottomNav(
           currentIndex: _currentIndex,
-          onTap: (i) => setState(() => _currentIndex = i),
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomNav extends StatelessWidget {
-  final int currentIndex;
-  final Function(int) onTap;
-  const _BottomNav({required this.currentIndex, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, -4)),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(icon: Icons.home_rounded, label: 'Inicio', index: 0, currentIndex: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.account_balance_wallet_rounded, label: 'Carteira', index: 3, currentIndex: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.person_rounded, label: 'Perfil', index: 4, currentIndex: currentIndex, onTap: onTap),
-            ],
-          ),
-        ),
+          onTap: (i) {
+            setState(() => _currentIndex = i);
+          },
+        ),  
       ),
     );
   }
@@ -232,7 +205,12 @@ class _Header extends StatelessWidget {
                 ],
               ),
               GestureDetector(
-                onTap: () {},
+                onTap: () async {
+                  final rechargeDone = await showRechargeModal(context); 
+                  if (rechargeDone && context.mounted) {
+                    context.read<PassengerHomeController>().loadAll();
+                  }
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(color: RoyColors.green, borderRadius: BorderRadius.circular(20)),
@@ -268,8 +246,8 @@ class _SearchSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         GestureDetector(
-          onTap: () {},
-          child: Container(
+          onTap:() => context.go('/search'),
+          child: Container( 
             width: double.infinity,
             height: 52,
             decoration: BoxDecoration(color: RoyColors.blueNavy, borderRadius: BorderRadius.circular(12)),
@@ -278,7 +256,8 @@ class _SearchSection extends StatelessWidget {
               children: [
                 Icon(Icons.search, size: 18, color: Colors.white),
                 SizedBox(width: 8),
-                Text('Buscar caronas', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                Text('Buscar caronas', 
+                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -318,7 +297,24 @@ class _NextRideSection extends StatelessWidget {
     );
   }
 
+  String _statusPt(String status) {
+    final normalized = status.toLowerCase();
+
+    const labels = {
+      'accepted': 'Aceito',
+      'pending': 'Pendente',
+      'completed': 'Concluída',
+      'cancelled': 'Cancelada',
+      'canceled': 'Cancelada',
+      'rejected': 'Recusada',
+    };
+
+    return labels[normalized] ?? status;
+  }
+
   Widget _rideCard() {
+    final statusPt = _statusPt(ctrl.rideStatusLabel);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -329,42 +325,71 @@ class _NextRideSection extends StatelessWidget {
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: RoyColors.green.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: RoyColors.green.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              const Text('🚗', style: TextStyle(fontSize: 28)),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${ctrl.rideStatusLabel.toUpperCase()} · ${ctrl.rideDepartureLabel}',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
+          const Text('🚗', style: TextStyle(fontSize: 28)),
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${statusPt.toUpperCase()} · ${ctrl.rideDepartureLabel}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${ctrl.rideOrigin} → ${ctrl.rideDestination}',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${ctrl.rideOrigin} → ${ctrl.rideDestination}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${ctrl.rideDepartureTime} · com ${ctrl.rideDriverName} · ${ctrl.ridePrice}',
-                    style: const TextStyle(fontSize: 11, color: Colors.white70),
-                  ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${ctrl.rideDepartureTime} · com ${ctrl.rideDriverName} · ${ctrl.ridePrice}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: Colors.white70),
+                ),
+              ],
+            ),
           ),
+
+          const SizedBox(width: 8),
+
           GestureDetector(
             onTap: () {},
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(8)),
-              child: const Text('Ver', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Ver',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
         ],
