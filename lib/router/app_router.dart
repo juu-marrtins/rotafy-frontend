@@ -4,6 +4,8 @@ import 'package:rotafy_frontend/features/auth/register/presentation/pages/regist
 import 'package:rotafy_frontend/features/auth/login/presentation/pages/login_page.dart';
 import 'package:rotafy_frontend/features/splash/splash_page.dart';
 import 'package:rotafy_frontend/features/passenger_home/presentation/pages/passenger_home.dart';
+import 'package:rotafy_frontend/features/search_rides/pages/search_rides.dart';
+
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -31,5 +33,9 @@ final appRouter = GoRouter(
       path: '/passenger/home',
       builder: (context, state) => const PassengerHome(),
     ),
+    GoRoute(
+      path: '/search',
+      builder: (context, state) => const SearchRidesPage(),
+    ),  
   ],
 );

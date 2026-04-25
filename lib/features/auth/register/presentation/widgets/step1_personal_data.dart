@@ -187,8 +187,6 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
-// ── Formatadores ──────────────────────────────────────────────
-
 class _CpfInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
