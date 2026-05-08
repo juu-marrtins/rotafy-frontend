@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'package:rotafy_frontend/core/services/auth_storage.dart';
 import 'dart:convert';
+import 'dart:html' as html;
 
 class ApiClient {
   static const _baseUrl = 'https://nonhedonistically-unmoldy-nelson.ngrok-free.dev/api';
@@ -47,5 +48,10 @@ class ApiClient {
     request.fields.addAll(fields);
     request.files.addAll(files);
     return request.send();
+  }
+
+
+  static String get _deviceName {
+    return html.window.navigator.userAgent;
   }
 }
