@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:rotafy_frontend/core/theme/roy_colors.dart';
 import 'package:rotafy_frontend/features/passenger_home/presentation/pages/wallet/recharge_modal.dart';
 import '../state/passenger_home_controller.dart';
+import 'package:rotafy_frontend/core/services/auth_storage.dart';
 import 'package:rotafy_frontend/widgets/bottom_nav.dart';
+import 'package:rotafy_frontend/router/app_router.dart';
 
 class PassengerHome extends StatefulWidget {
   const PassengerHome({super.key});
@@ -131,6 +133,83 @@ class _Header extends StatelessWidget {
   final PassengerHomeController ctrl;
   const _Header({required this.ctrl});
 
+  void _showProfileModal(BuildContext context, PassengerHomeController ctrl) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.only(bottom: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: const Color(0xFF1A2340),
+                    backgroundImage: ctrl.photoUrl != null ? NetworkImage(ctrl.photoUrl!) : null,
+                    child: ctrl.photoUrl == null
+                        ? Text(ctrl.firstName.isNotEmpty ? ctrl.firstName[0] : '?',
+                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700))
+                        : null,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(ctrl.userName ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A2340))),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1),
+
+            ListTile(
+              leading: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.directions_car_outlined, color: Color(0xFF1A2340), size: 20),
+              ),
+              title: const Text('Motorista', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF1A2340))),
+              subtitle: const Text('Cadastre-se e comece a dar caronas', style: TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/driver/register'); 
+              },
+            ),
+
+            const Divider(height: 1, indent: 16, endIndent: 16),
+
+            ListTile(
+              leading: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: const Color(0xFFFFEBEE), borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.logout_rounded, color: Color(0xFFE53935), size: 20),
+              ),
+              title: const Text('Sair', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFFE53935))),
+              subtitle: const Text('Encerrar sessão neste dispositivo', style: TextStyle(fontSize: 12)),
+              onTap: () async {
+                Navigator.pop(context);
+                await AuthStorage.clearToken();
+                await refreshAuth(); 
+                if (context.mounted) context.go('/login');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -161,7 +240,7 @@ class _Header extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 GestureDetector(
-                  onTap: () => context.go('/profile'),
+                  onTap: () => _showProfileModal(context, ctrl),
                   child: Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -290,9 +369,25 @@ class _NextRideSection extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(12)),
-      child: const Center(
-        child: Text('Nenhuma carona próxima', style: TextStyle(color: RoyColors.textSecondary, fontSize: 14)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Column(
+        children: [
+          Text('🚗', style: TextStyle(fontSize: 36)),
+          SizedBox(height: 8),
+          Text(
+            'Nenhuma carona agendada',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: RoyColors.textPrimary),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Ops! Parece que você ainda não tem uma corrida agendada. Que tal buscar uma?',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: RoyColors.textSecondary),
+          ),
+        ],
       ),
     );
   }
@@ -404,8 +499,6 @@ class _HistorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (ctrl.recentHistory.isEmpty) return const SizedBox.shrink();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -423,6 +516,32 @@ class _HistorySection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+        if (ctrl.recentHistory.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Column(
+                    children: [
+                      Text('📋', style: TextStyle(fontSize: 36)),
+                      SizedBox(height: 8),
+                      Text(
+                        'Nenhuma viagem ainda',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: RoyColors.textPrimary),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Ops! Parece que você ainda não tem nenhum histórico. Faça sua primeira carona!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: RoyColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                )
+              else
         Container(
           decoration: BoxDecoration(
             color: Colors.white,

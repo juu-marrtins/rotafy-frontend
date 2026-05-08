@@ -125,6 +125,23 @@ class _LoginView extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: ctrl.rememberMe,
+                          activeColor: RoyColors.blueNavy,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                          onChanged: (v) => ctrl.setRememberMe(v ?? false),
+                        ),
+                        const Text(
+                          'Lembre-me por 3 meses',
+                          style: TextStyle(fontSize: 13, color: RoyColors.textSecondary),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
                     ElevatedButton(
                       onPressed: ctrl.isLoading
                           ? null
